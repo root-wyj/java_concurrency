@@ -1,5 +1,7 @@
 # chapter4 组合对象
 
+[TOC]
+
 ### 测试例子
 
 ##### Test1
@@ -11,3 +13,18 @@
 
 <br>
 
+##### Test2 -- 机动车追踪器
+
+`问题描述：`
+每一辆机动车都有一个String标识，并有一个对应的位置(x,y)。对象VehicleTracker封装了这些信息。**视图线程**和**多个更新线程**可能会共享数据模型。视图线程会获取机动车的名称和位置，将他们显示在显示器上。
+
+1. 包`test2.a`中，演示了基于Java监视器模式(对象封装了所有状态，并由对象自己的内部锁保护)的同步方式。该例子用这种方式实现有这么几个问题，`getLocations`方法也是同步的，这时候会阻塞很多的update操作，更重要的是，`getLocation`方法也被阻塞了，会有很严重的用户体验上的问题。而且类`MutablePoint`是非线程安全的（其实仔细想想这里并没有什么问题）.
+
+2. https://www.cnblogs.com/jxldjsn/p/6115764.html
+
+
+
+
+> `tips`--`Collections.synchronizedList(list:List)` 通过该静态方法，重新返回一个经过`SynchronizedList`装饰的List，这样所有List的操作，都会被`SynchronizedList`中的同步方法同步，做到线程安全。
+
+为什么List、Map这么复杂的结构，但是这么简单就做到了从线程不安全到线程安全的转变？ 因为系统对List系列的良好封装，只暴露了List接口，扩展修改都非常方便，不会影响到内部的其他类。
