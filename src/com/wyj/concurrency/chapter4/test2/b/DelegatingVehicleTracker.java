@@ -23,6 +23,7 @@ public class DelegatingVehicleTracker {
 		return Collections.unmodifiableMap(new HashMap<>(locations));
 	}
 	
+//	与上面方法的区别 就是 上面是某一时刻的镜像  下面是实时数据
 //	public Map<String, Point> getLocations() {
 //		return Collections.unmodifiableMap(locations);
 //	}

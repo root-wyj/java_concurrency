@@ -27,4 +27,32 @@
 
 > `tips`--`Collections.synchronizedList(list:List)` 通过该静态方法，重新返回一个经过`SynchronizedList`装饰的List，这样所有List的操作，都会被`SynchronizedList`中的同步方法同步，做到线程安全。
 
+> `tips` -- `Collections.unmodifiableMap(locations)` 通过该静态方法，重新返回一个经过 `UnmodifiableMap`装饰的Map，内部只是创建了一个新的指向原空间的指针，并且隔离了map的增删操作，所以通过该方法返回的map是绝对不会被修改的。（但是，如果这个map还有其他指针，那么该map的修改也会体现在unmodify方法返回的map指针中）下面给出示例：
+
+```java
+	public static void main(String[] args) {
+		Map<String, String> map1 = new HashMap<>();
+		map1.put("1", "haha");
+		System.out.println("map1:"+map1);
+		// Map<String, String> map2 = Collections.unmodifiableMap(map1); //注释1
+		// Map<String, String> map2 = Collections.unmodifiableMap(new HashMap(map1)); //注释2
+		System.out.println("map2:"+map2);
+		map1.put("2", "xixi");
+		System.out.println("map1:"+map1);
+		System.out.println("map2:"+map2);
+	}
+
+//输出 打开注释1
+map1:{1=haha}
+map2:{1=haha}
+map1:{1=haha, 2=xixi}
+map2:{1=haha, 2=xixi}
+//打开注释2
+map1:{1=haha}
+map2:{1=haha}
+map1:{1=haha, 2=xixi}
+map2:{1=haha}
+```
+
+
 为什么List、Map这么复杂的结构，但是这么简单就做到了从线程不安全到线程安全的转变？ 因为系统对List系列的良好封装，只暴露了List接口，扩展修改都非常方便，不会影响到内部的其他类。
