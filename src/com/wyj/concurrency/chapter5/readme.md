@@ -91,10 +91,74 @@ java提供了同步容器，如`Collections.synchronizedList(list)`返回的`Syn
 
 java类库中有很多`BlockingQueue`的实现。
 - `LinkedBlockingQueue`和`ArrayBlockingQueue`是FIFO队列。一个是链表的实现方式 ，一个是数组的实现方式。
-- `LinkedBlockingDeque` 是双向链表，可在头部尾部操作。
 - `PriorityBlockQueue` 是一个按优先级排序的队列（如果不希望是FIFO的）。可以按照元素的自然顺序（如实现了`Comparable`的类），也可以使用`Comparator`进行排序。
 - `SynchronousQueue` 可以说不是一个真正意义上的队列。因为它不会为队列元素维护任何存储空间。和其他的相比，就像是吧文件直接递给你的同事，还是把文件直接发送到他的邮箱期待他一会可以得到文件之间的不同。`SynchronousQueue`没有存储能力，除非有另外一个消费者线程已经准备好处理他了，否则put和take会一直阻塞。这种队列只有在消费者充足的时候比较合适。
 
 `连续的线程限制`：`java.util.concurrent`包中的阻塞队列，全部都包含充分的内部同步，从而能安全的将对象从生产者线程发布至消费者线程。生产者-消费者模式和阻塞队列一起，为生产者和消费者之间移交的对象所有权提供了**连续的线程限制**。在整个生产消费过程当中，对象完全由单一线程所拥有，这个线程可以任意修改，因为它具有独占访问权。
 
-对象池扩展了连续的线程限制。
+对象池扩展了连续的线程限制。只要保证了对象池的充分同步，对象的所有权就可以在线程间安全地传递。
+
+#### 双端队列和窃取工作
+
+在Java6中增加了两个容器类型，`Deque`和`BlockingDeque`。他们分别扩展了`Queue`和`BlockingQueue`。他是一个双端队列，`ArrayDeque`和`LinkedBlockingDeque`实现了他们。
+
+`窃取工作模式` -- 双端队列的特性与一种叫做**窃取工作模式**的模式相关联。每一个消费者都有一个自己的双端队列。如果一个消费者完成了自己的双端队列的全部工作，它可以偷取其他消费者的双端队列中的**末尾**任务。
+
+------------
+
+## 阻塞与可中断
+
+[线程的状态](https://github.com/root-wyj/java_concurrency/blob/master/thread-state.md)
+
+关于中断，还是理解的不太深，所以此次先不讨论，以后再说。中断的两篇文章https://www.cnblogs.com/hapjin/p/5450779.html，http://blog.csdn.net/canot/article/details/51087772。
+
+线程可能会因为几种原因被阻塞或暂停，等待IO操作结束，等待获得一个锁，等待从Thread.sleep中唤醒，或是等待另一个线程的计算结果。当一个线程阻塞时，通常会被挂起，并设置成线程阻塞的某个状态（BLOCKED、WAITING或TIMED_WAITING）。
+
+BlockingQueue的put和take是阻塞的方法，会抛出InterruptedException。如果它被中断，将可以提前结束阻塞状态。线程也提供了interrupt方法，来中断一个线程。
+
+> 线程在阻塞的状态下调用interrupt方法会抛出InterruptedException异常，而在正常运行的情况下是不会抛出异常的。interrupt方法会将线程的中断标志位设置为true，但是如果调用interrupt方法的时候，线程被阻塞或挂起，线程无法响应，无法正确设置标志位，所以抛出异常。
+
+中断是一种协作机制，一个线程不能迫使其他线程停止正在做的事情，或者去做其他事情。当线程A中断B时，A仅仅要求B在达到某个方便停止的关键点时，停止正在做的事情。从时间角度看，这样有一定的延迟，相应中断的阻塞方法（抛出的InterruptedException异常？暂时是这么理解的），可以更容易地取消耗时活动。如何相应，有两种基本选择：
+
+ - **传递InterruptedException** 把异常传递给调用者。可能不捕获；也可能捕获，做完处理，再抛出
+ - **恢复中断** 有时候不能抛出该异常，比如代码是Runnable的一部分的时候。这时候必须捕获异常，并在当前线程调用interrupt恢复中断状态。就是再次设置线程的状态为中断状态。如示例Test1.test3中，t2中断了t1，t1捕获了异常之后，又重新设置了中断状态。
+
+### 怎么理解中断
+
+其实我自己有点理解不了中断，我不知道为什么会需要中断，何时才会用到中断。
+
+中断线程的使用场景：
+在某个子线程中为了等待一些特定条件的到来, 你调用了Thread.sleep(10000), 预期线程睡10秒之后自己醒来, 但是如果这个特定条件提前到来的话, 来通知一个处于Sleep的线程。又比如说.线程通过调用子线程的join方法阻塞自己以等待子线程结束, 但是子线程运行过程中发现自己没办法在短时间内结束, 于是它需要想办法告诉主线程别等我了. 这些情况下, 就需要中断。
+
+**没有任何语言方面的需求要求一个被中断的程序应该终止。中断一个线程只是为了引起该线程的注意，被中断线程可以决定如何应对中断 ** -- 来自 Core Java。
+
+中断的经典使用代码：
+
+```java
+ //Interrupted的经典使用代码    
+    public void run(){    
+            try{    
+                 ....    
+                 while(!Thread.currentThread().isInterrupted()&& more work to do){    
+                        // do more work;    
+                 }    
+            }catch(InterruptedException e){    
+                        // thread was interrupted during sleep or wait    
+            }    
+            finally{    
+                       // cleanup, if required    
+            }    
+    }
+
+```
+
+> 不是所有的阻塞方法收到中断后都可以取消阻塞状态, 输入和输出流类会阻塞等待 I/O 完成，但是它们不抛出 InterruptedException，而且在被中断的情况下也不会退出阻塞状态. 
+尝试获取一个内部锁的操作（进入一个 synchronized 块）是不能被中断的，但是 ReentrantLock 支持可中断的获取模式即 tryLock(long time, TimeUnit unit)。
+
+
+
+
+
+
+
+
