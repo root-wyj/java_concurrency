@@ -9,7 +9,8 @@ import java.util.concurrent.CountDownLatch;
  * @date 2018年2月23日
  */
 
-public class Test {
+public class TSTLatch {
+	//使用CountDownLatch计算多个并发 完成某个任务需要的时间。
 	public long timeTasks(int nThreads, final Runnable task) throws InterruptedException {
 		
 		final CountDownLatch startGate = new CountDownLatch(1);
@@ -48,7 +49,7 @@ public class Test {
 	}
 	
 	public static void main(String[] args) throws InterruptedException {
-		Test test = new Test();
+		TSTLatch test = new TSTLatch();
 		long time = test.timeTasks(5, new Runnable() {
 			@Override
 			public void run() {

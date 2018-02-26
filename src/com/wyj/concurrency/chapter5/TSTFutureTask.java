@@ -10,7 +10,7 @@ import java.util.concurrent.FutureTask;
  * @date 2018年2月23日
  */
 
-public class Test2 {
+public class TSTFutureTask {
 	private final FutureTask<Integer> future = new FutureTask<>(
 			new Callable<Integer>() {
 		public Integer call() throws Exception {
@@ -31,6 +31,7 @@ public class Test2 {
 		} catch (ExecutionException e) {
 			Throwable t = e.getCause();
 			
+			//处理各种各样的异常
 			if (t instanceof RuntimeException) {
 				throw (RuntimeException)t;
 			} else if (t instanceof Error) {
@@ -43,7 +44,7 @@ public class Test2 {
 	}
 	
 	public static void main(String[] args) throws InterruptedException {
-		Test2 t = new Test2();
+		TSTFutureTask t = new TSTFutureTask();
 		t.start();
 		System.out.println("start");
 		System.out.println(t.get());
